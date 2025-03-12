@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import urlJoin from 'url-join';
 
@@ -7,23 +7,29 @@ const EXAMPLE_MAIN_URL = window.location.origin;
 
 export const Voice = () => {
   const [productFilterList, setProductFilterList] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
-  // const [companyId, setCompanyId] = useState('');
-  // const [applicationId, setApplicationId] = useState('');
-
-  // Extract query parameters from URL
-  // useEffect(() => {
-  //   const queryParams = new URLSearchParams(window.location.search);
-    console.log(window.location.href);
-    console.log(window.location);
-  //   setCompanyId(queryParams.get('company_id') || '');
-  //   setApplicationId(queryParams.get('application_id') || '');
-  // }, []);
-  // console.log(companyId, applicationId, 'company');
   const application_id = '672ddc7346bed2c768faf043';
-  // const application_id = '67973abe4d4806f9d5fcaaa3';
-
   const company_id = '9095';
+
+  let silenceTimer = null;
+
+  useEffect(() => {
+    if (listening) {
+      setSearchQuery(transcript);
+
+      if (silenceTimer) clearTimeout(silenceTimer);
+
+      silenceTimer = setTimeout(() => {
+        SpeechRecognition.stopListening();
+        fetchApplicationProductsBaseOnFilter(transcript);
+      }, 3000);
+    }
+
+    return () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
+    };
+  }, [transcript, listening]);
 
   const toggleListening = () => {
     if (listening) {
@@ -31,6 +37,7 @@ export const Voice = () => {
       fetchApplicationProductsBaseOnFilter(transcript);
     } else {
       resetTranscript();
+      setSearchQuery('');
       SpeechRecognition.startListening({ continuous: true });
     }
   };
@@ -48,134 +55,128 @@ export const Voice = () => {
     }
   };
 
-  const handleReset = () => {
-    resetTranscript();
-    setProductFilterList([]);
-  };
-
   const stripHtml = (html) => {
-    // Remove <style> tags and their content
     html = html.replace(/<style[^>]*>.*?<\/style>/gs, '');
-
-    // Parse remaining HTML and extract text
     const doc = new DOMParser().parseFromString(html, 'text/html');
     return doc.body.textContent || '';
   };
 
   return (
-    <div
-      style={{
-        maxWidth: '800px',
-        margin: '0 auto',
-        padding: '20px',
-        backgroundColor: 'white',
-        boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
-        borderRadius: '10px',
-      }}
-    >
-      <h2 style={{ fontSize: '24px', fontWeight: 'bold', textAlign: 'center', marginBottom: '20px' }}>
-        🎙️ Voice Search for Products
-      </h2>
+    <div style={styles.container}>
+      <h2 style={styles.title}>Voice Search for Products</h2>
 
-      <div
-        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '20px' }}
-      >
-        <button
-          onClick={toggleListening}
-          style={{
-            padding: '10px 20px',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-            boxShadow: '0px 2px 4px rgba(0,0,0,0.2)',
-            backgroundColor: listening ? '#E53E3E' : '#3182CE',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          {listening ? '🛑 Stop Listening' : '🎤 Start Voice Search'}
-        </button>
-
-        <button
-          onClick={handleReset}
-          style={{
-            backgroundColor: '#718096',
-            color: 'white',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer',
-            boxShadow: '0px 2px 4px rgba(0,0,0,0.2)',
-          }}
-        >
-          🔄 Reset
-        </button>
+      <div style={styles.inputContainer}>
+        <input type="text" value={searchQuery} placeholder="Search for products..." readOnly style={styles.input} />
+        <span onClick={toggleListening} style={styles.micButton}>
+          {listening ? <i className="fa-solid fa-microphone fa-fade"></i> : <i className="fa-solid fa-microphone"></i>}
+        </span>
       </div>
 
-      {transcript && (
-        <p style={{ fontSize: '18px', textAlign: 'center', color: '#2D3748', fontWeight: '500' }}>
-          <strong>Search Query:</strong> <span style={{ color: '#3182CE' }}>&quot;{transcript}&quot;</span>
-        </p>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '20px' }}>
-        {productFilterList.length > 0 ? (
-          productFilterList.map((product, index) => (
-            <div
-              key={index}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                border: '1px solid #E2E8F0',
-                padding: '10px',
-                borderRadius: '8px',
-                boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
-                backgroundColor: '#F7FAFC',
-              }}
-            >
-              {product.media && product.media.length > 0 && (
-                <img
-                  src={product.media[0].url}
-                  alt={product.name}
-                  style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '8px',
-                    objectFit: 'cover',
-                    marginRight: '15px',
-                  }}
-                />
-              )}
-              <div>
-                <h3 style={{ fontWeight: 'bold', fontSize: '16px' }}>{product.name}</h3>
-                <p>
-                  <strong>Brand:</strong> {product.brand?.name || 'N/A'}
-                </p>
-                <p>
-                  <strong>Category:</strong> {product.category_slug || 'N/A'}
-                </p>
-                <p>
-                  <strong>Color:</strong> {product.color || 'N/A'}
-                </p>
-                <p>
-                  <strong>Price:</strong>{' '}
-                  {product.price?.effective?.min
-                    ? `${product.price.effective.currency_symbol || '₹'}${product.price.effective.min}`
-                    : 'N/A'}
-                </p>
-                <p>
-                  <strong>Description:</strong> {stripHtml(product.description) || 'N/A'}
-                </p>
+      <div style={styles.grid}>
+        {productFilterList.length > 0
+          ? productFilterList.map((product, index) => (
+              <div key={index} style={styles.productCard}>
+                {product.media?.length > 0 && (
+                  <img src={product.media[0].url} alt={product.name} style={styles.productImage} />
+                )}
+                <div>
+                  <h3 style={styles.productName}>{product.name}</h3>
+                  <p>
+                    <strong>Brand:</strong> {product.brand?.name || 'N/A'}
+                  </p>
+                  <p>
+                    <strong>Category:</strong> {product.category_slug || 'N/A'}
+                  </p>
+                  <p>
+                    <strong>Color:</strong> {product.color || 'N/A'}
+                  </p>
+                  <p>
+                    <strong>Price:</strong>{' '}
+                    {product.price?.effective?.min
+                      ? `${product.price.effective.currency_symbol || '₹'}${product.price.effective.min}`
+                      : 'N/A'}
+                  </p>
+                  <p>
+                    <strong>Description:</strong> {stripHtml(product.description) || 'N/A'}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
-        ) : (
-          <p style={{ textAlign: 'center', color: '#718096', marginTop: '10px' }}>
-            No products found. Try another search.
-          </p>
-        )}
+            ))
+          : searchQuery && <p style={styles.noResults}>No products found. Try another search.</p>}
       </div>
     </div>
   );
+};
+
+const styles = {
+  container: {
+    maxWidth: '800px',
+    margin: '0 auto',
+    padding: '20px',
+    backgroundColor: '#fff',
+    borderRadius: '10px',
+    boxShadow: '0px 4px 8px rgba(0,0,0,0.1)',
+  },
+  title: {
+    fontSize: '24px',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: '20px',
+    color: '#333',
+  },
+  inputContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '20px',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    padding: '10px',
+  },
+  input: {
+    flex: 1,
+    padding: '10px',
+    fontSize: '16px',
+    border: 'none',
+    outline: 'none',
+  },
+  micButton: {
+    cursor: 'pointer',
+    fontSize: '22px',
+    padding: '10px',
+    borderRadius: '50%',
+    transition: 'background 0.2s ease-in-out',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '15px',
+    marginTop: '20px',
+  },
+  productCard: {
+    display: 'flex',
+    alignItems: 'center',
+    border: '1px solid #E2E8F0',
+    padding: '12px',
+    borderRadius: '8px',
+    boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
+    backgroundColor: '#F9F9F9',
+  },
+  productImage: {
+    width: '80px',
+    height: '80px',
+    borderRadius: '8px',
+    marginRight: '15px',
+  },
+  productName: {
+    fontWeight: 'bold',
+    fontSize: '16px',
+    marginBottom: '5px',
+  },
+  noResults: {
+    textAlign: 'center',
+    color: '#718096',
+    marginTop: '10px',
+  },
 };

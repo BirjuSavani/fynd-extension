@@ -276,7 +276,7 @@ function extractFiltersFromQuery(query, brands, categories, colors) {
 
   // Extract price conditions using regex
   const priceMatch = lowerQuery.match(/\b(?:under|above|for|is) (\d+)\b/);
-  const rangeMatch = lowerQuery.match(/\bbetween (\d+) and (\d+)\b/);
+  const rangeMatch = lowerQuery.match(/\bbetween (\d+) to (\d+)\b/);
 
   if (priceMatch) {
     const [_, price] = priceMatch;
