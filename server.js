@@ -50,7 +50,7 @@ const STATIC_PATH =
   process.env.NODE_ENV === 'production'
     ? path.join(process.cwd(), 'frontend', 'public', 'dist')
     : path.join(process.cwd(), 'frontend');
-console.log(STATIC_PATH,'static');
+    
 const app = express();
 const platformApiRoutes = fdkExtension.platformApiRoutes;
 
@@ -143,135 +143,6 @@ productRouter.get('/application/:application_id', async (req, res, next) => {
   }
 });
 
-// productRouter.get('/applications/:application_id', async (req, res, next) => {
-//   try {
-//     console.log('Fetching products...');
-//     const { platformClient } = req;
-//     const { application_id } = req.params;
-//     const { query } = req.query; // Extract user query dynamically
-//     // const query = 'give me shoes black color'
-
-//     if (!query) {
-//       return res.status(400).json({ message: 'Query parameter is required' });
-//     }
-
-//     if (!platformClient) {
-//       return res.status(401).json({ message: 'Platform client is not available' });
-//     }
-
-//     // Fetch all products
-//     const data = await platformClient.application(application_id).catalog.getAppProducts();
-//     if (!data.items || data.items.length === 0) {
-//       console.log('No products found for application ID:', application_id);
-//       return res.json({ items: [] });
-//     }
-
-//     console.log(`Found ${data.items.length} products for application ID: ${application_id}`);
-
-//     // Step 1: Extract possible values dynamically from products
-//     const allBrands = new Set();
-//     const allCategories = new Set();
-//     const allColors = new Set();
-
-//     data.items.forEach((product) => {
-//       if (product.brand?.name) allBrands.add(product.brand.name.toLowerCase());
-//       if (product.category_slug) allCategories.add(product.category_slug.toLowerCase().replace(/-/g, ' '));
-//       if (product.color) allColors.add(product.color.toLowerCase());
-//     });
-
-//     console.log('Available Brands:', allBrands);
-//     console.log('Available Categories:', allCategories);
-//     console.log('Available Colors:', allColors);
-
-//     // Step 2: Parse user query dynamically
-//     const { brand, max_price, min_price, exact_price, category, color } = extractFiltersFromQuery(
-//       query,
-//       allBrands,
-//       allCategories,
-//       allColors
-//     );
-//     console.log('Extracted filters:', { brand, max_price, min_price, exact_price, category, color });
-
-//     // Step 3: Filter products based on extracted query
-//     const filteredProducts = data.items.filter((product) => {
-//       const productBrand = product.brand?.name?.toLowerCase();
-//       const productCategory = product.category_slug?.toLowerCase().replace(/-/g, ' ');
-//       const productColor = product.color?.toLowerCase();
-//       const effectivePrice = product.price?.effective?.min || product.price?.effective?.max || 0;
-
-//       const brandMatch = brand ? productBrand === brand.toLowerCase() : true;
-//       const categoryMatch = category ? productCategory === category.toLowerCase() : true;
-//       const colorMatch = color ? productColor === color.toLowerCase() : true;
-
-//       // Price Filtering Logic
-//       const priceMatch =
-//         (max_price ? effectivePrice <= parseFloat(max_price) : true) &&
-//         (min_price ? effectivePrice >= parseFloat(min_price) : true) &&
-//         (exact_price ? effectivePrice === parseFloat(exact_price) : true);
-
-//       return brandMatch && categoryMatch && colorMatch && priceMatch;
-//     });
-
-//     console.log(`Filtered ${filteredProducts.length} products based on query:`, {
-//       brand,
-//       max_price,
-//       min_price,
-//       exact_price,
-//       category,
-//       color,
-//     });
-
-//     return res.json({ items: filteredProducts });
-//   } catch (err) {
-//     console.error('Error fetching application products:', err);
-//     next(err);
-//   }
-// });
-
-// /**
-//  * Extracts filters dynamically from user query
-//  */
-// function extractFiltersFromQuery(query, brands, categories, colors) {
-//   if (!query) return {};
-
-//   // const words = query.toLowerCase().split(' ');
-//    const lowerQuery = query.toLowerCase();
-
-//   // Extract brand dynamically
-//   const brand = Array.from(brands).find((b) => lowerQuery.includes(b)) || null;
-
-//   // Extract category dynamically
-//   const category = Array.from(categories).find((c) => lowerQuery.includes(c)) || null;
-
-//   // Extract color dynamically
-//   const color = Array.from(colors).find((col) => lowerQuery.includes(col)) || null;
-
-//   // Extract price conditions (under, above, exact)
-//   let max_price = null;
-//   let min_price = null;
-//   let exact_price = null;
-//   const words = lowerQuery.split(' ');
-
-//   words.forEach((word, index) => {
-//     if (word === 'under' && words[index + 1] && !isNaN(words[index + 1])) {
-//       max_price = words[index + 1];
-//     }
-//     if (word === 'above' && words[index + 1] && !isNaN(words[index + 1])) {
-//       min_price = words[index + 1];
-//     }
-//     if ((word === 'for' || word === 'is') && words[index + 1] && !isNaN(words[index + 1])) {
-//       exact_price = words[index + 1];
-//     }
-//   });
-
-//   return { brand, max_price, min_price, exact_price, category, color };
-// }
-
-
-
-// Route to fetch categories
-
-
 productRouter.get('/applications/:application_id', async (req, res, next) => {
   try {
     console.log('Fetching products...');
@@ -295,9 +166,13 @@ productRouter.get('/applications/:application_id', async (req, res, next) => {
     data.items.forEach(({ brand, category_slug, color }) => {
       if (brand?.name) allBrands.add(brand.name.toLowerCase());
       if (category_slug) allCategories.add(category_slug.toLowerCase().replace(/-/g, ' '));
-      if (color) allColors.add(color.toLowerCase());
+      // if (color) allColors.add(color.toLowerCase());
+       if (color) {
+         color.split(',').forEach((col) => allColors.add(col.trim().toLowerCase()));
+       }
     });
 
+    console.log(allColors);
     // Extract filters from query
     const filters = extractFiltersFromQuery(query, allBrands, allCategories, allColors);
     console.log('Extracted filters:', filters);
@@ -306,14 +181,16 @@ productRouter.get('/applications/:application_id', async (req, res, next) => {
     let filteredProducts = data.items.filter(({ brand, category_slug, color, price, name }) => {
       const productBrand = brand?.name?.toLowerCase() || '';
       const productCategory = category_slug?.toLowerCase().replace(/-/g, ' ') || '';
-      const productColor = color?.toLowerCase() || '';
+      // const productColor = color?.toLowerCase() || '';
+      const productColors = color ? color.split(',').map((col) => col.trim().toLowerCase()) : [];
       const effectivePrice = price?.effective?.min || price?.effective?.max || 0;
       const productName = name?.toLowerCase() || '';
 
       return (
         (!filters.brand || productBrand.includes(filters.brand)) && // Allow partial brand match
         (!filters.category || productCategory.includes(filters.category)) &&
-        (!filters.color || productColor.includes(filters.color)) &&
+        // (!filters.color || productColor.includes(filters.color)) &&
+        (!filters.color || filters.color.some((col) => productColors.includes(col))) &&
         (!filters.max_price || effectivePrice <= filters.max_price) &&
         (!filters.min_price || effectivePrice >= filters.min_price) &&
         (!filters.exact_price || effectivePrice === filters.exact_price) &&
@@ -374,6 +251,7 @@ function extractFiltersFromQuery(query, brands, categories, colors) {
   // filters.category = Array.from(categories).find((c) => new RegExp(`\\b${c}\\b`).test(lowerQuery)) || null;
   // filters.color = Array.from(colors).find((col) => new RegExp(`\\b${col}\\b`).test(lowerQuery)) || null;
   // filters.keyword = lowerQuery.includes('name') ? lowerQuery.replace('name', '').trim() : null;
+  
   // Extract exact match for brand
   filters.brand = Array.from(brands).find((b) => lowerQuery.includes(b)) || null;
 
@@ -381,7 +259,17 @@ function extractFiltersFromQuery(query, brands, categories, colors) {
   filters.category = Array.from(categories).find((c) => lowerQuery.includes(c)) || null;
 
   // Extract exact match for color
-  filters.color = Array.from(colors).find((col) => lowerQuery.includes(col)) || null;
+  // filters.color = Array.from(colors).find((col) => lowerQuery.includes(col)) || null;
+  // filters.color = Array.from(colors).filter((col) => lowerQuery.includes(col)); // Capture multiple colors
+  filters.color = Array.from(colors).filter((col) => lowerQuery.includes(col));
+  if (filters.color.length === 0) {
+    filters.color = null;
+  } else if (filters.color.length > 1) {
+    const colorCombo = filters.color.join(', ');
+    if (colors.has(colorCombo)) {
+      filters.color = colorCombo; // Match exact color combination
+    }
+  }
 
   // Extract keyword-based search
   filters.keyword = lowerQuery.includes('name') ? lowerQuery.replace('name', '').trim() : null;
@@ -405,41 +293,6 @@ function extractFiltersFromQuery(query, brands, categories, colors) {
 
   return filters;
 }
-
-
-
-// productRouter.get('/categories', async (req, res, next) => {z
-//   try {
-//     const { platformClient } = req;
-//     const application_id = '672ddc7346bed2c768faf043';
-
-//     if (!platformClient) {
-//       return res.status(401).json({ message: 'Platform client is not available' });
-//     }
-
-//     // console.log('Available modules in platformClient:', Object.keys(platformClient));
-
-//     // Ensure platformClient has the application method
-//     if (!platformClient.application) {
-//       console.error('Application module is not available in platformClient');
-//       return res.status(500).json({ error: 'Application module is not initialized' });
-//     }
-
-//     // console.log('Available modules in platformClient catalog:', platformClient.catalog);
-
-//     // Fetch categories from Fynd Platform API using an application_id
-//     const categories = await platformClient.application(application_id).catalog.getCategories();
-//     // url = `https://api.fynd.com/service/platform/catalog/v1.0/company/{company_id}/category/`;
-//     // const categories = await platformClient.catalog.getCategories();
-
-//     // console.log('Fetched Categories:', categories);
-
-//     return res.json(categories);
-//   } catch (err) {
-//     console.error('Error fetching categories:', err);
-//     next(err);
-//   }
-// });
 
 // Mount product routes
 
