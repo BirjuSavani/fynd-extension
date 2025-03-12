@@ -8,6 +8,7 @@ const EXAMPLE_MAIN_URL = window.location.origin;
 export const Voice = () => {
   const [productFilterList, setProductFilterList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false); // State for loader
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
   const application_id = '672ddc7346bed2c768faf043';
   const company_id = '9095';
@@ -44,6 +45,7 @@ export const Voice = () => {
 
   const fetchApplicationProductsBaseOnFilter = async (query) => {
     if (!query) return;
+    setLoading(true); // Show loader when fetching starts
     try {
       const { data } = await axios.get(urlJoin(EXAMPLE_MAIN_URL, `/api/products/applications/${application_id}`), {
         headers: { 'x-company-id': company_id },
@@ -53,6 +55,7 @@ export const Voice = () => {
     } catch (e) {
       console.error('Error fetching application products:', e);
     }
+    setLoading(false); // Hide loader after fetching
   };
 
   const stripHtml = (html) => {
@@ -72,6 +75,13 @@ export const Voice = () => {
         </span>
       </div>
 
+      {/* Loader */}
+      {loading && (
+        <div style={styles.loader}>
+          <i className="fa-solid fa-spinner fa-spin"></i> Loading...
+        </div>
+      )}
+
       <div style={styles.grid}>
         {productFilterList.length > 0
           ? productFilterList.map((product, index) => (
@@ -79,7 +89,7 @@ export const Voice = () => {
                 {product.media?.length > 0 && (
                   <img src={product.media[0].url} alt={product.name} style={styles.productImage} />
                 )}
-                <div>
+                <div style={styles.productDetails}>
                   <h3 style={styles.productName}>{product.name}</h3>
                   <p>
                     <strong>Brand:</strong> {product.brand?.name || 'N/A'}
@@ -102,7 +112,7 @@ export const Voice = () => {
                 </div>
               </div>
             ))
-          : searchQuery && <p style={styles.noResults}>No products found. Try another search.</p>}
+          : searchQuery && !loading && <p style={styles.noResults}>No products found. Try another search.</p>}
       </div>
     </div>
   );
@@ -148,31 +158,44 @@ const styles = {
     borderRadius: '50%',
     transition: 'background 0.2s ease-in-out',
   },
+  loader: {
+    textAlign: 'center',
+    fontSize: '18px',
+    color: '#555',
+    marginBottom: '15px',
+  },
   grid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', // Responsive grid
     gap: '15px',
     marginTop: '20px',
   },
   productCard: {
     display: 'flex',
+    flexDirection: 'column', // Makes the layout vertical (image above, content below)
     alignItems: 'center',
     border: '1px solid #E2E8F0',
     padding: '12px',
     borderRadius: '8px',
     boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
     backgroundColor: '#F9F9F9',
+    textAlign: 'left',
   },
   productImage: {
-    width: '80px',
-    height: '80px',
-    borderRadius: '8px',
-    marginRight: '15px',
+    width: '100%', // Ensures full width
+    height: '210px', // Set a fixed height
+    objectFit: 'cover', // Ensures the image fits nicely
+    borderRadius: '8px 8px 0 0', // Rounded corners on top
+  },
+  productDetails: {
+    padding: '10px', // Space between image and content
+    width: '100%', // Full width
   },
   productName: {
     fontWeight: 'bold',
     fontSize: '16px',
     marginBottom: '5px',
+    textAlign: 'center',
   },
   noResults: {
     textAlign: 'center',
