@@ -16,6 +16,8 @@ export const Voice = () => {
   let silenceTimer = null;
 
   useEffect(() => {
+    // fetchToken();
+    fetchApplications();
     if (listening) {
       setSearchQuery(transcript);
 
@@ -58,6 +60,39 @@ export const Voice = () => {
     setLoading(false); // Hide loader after fetching
   };
 
+  const fetchToken = async () => {
+    try {
+      const { data } = await axios.get(urlJoin(EXAMPLE_MAIN_URL, '/api/company/all-token'), {
+        params: { company_id },
+      });
+
+      if (data?.companyId) {
+        localStorage.setItem('company_ID', data.companyId);
+        console.log('Token saved successfully');
+      } else {
+        console.warn('Company ID not found in response');
+      }
+    } catch (error) {
+      console.error('Error fetching Token:', error.message);
+    }
+  };
+
+  const fetchApplications = async () => {
+    try {
+      const response = await axios.get(urlJoin(EXAMPLE_MAIN_URL, '/api/application/all-applications'), {
+        params: { company_id },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Applications:', response.data);
+      return response.data; // Return data for further use if needed
+    } catch (error) {
+      console.error('Error fetching applications:', error.message);
+    }
+  };
+  
   const stripHtml = (html) => {
     html = html.replace(/<style[^>]*>.*?<\/style>/gs, '');
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -74,6 +109,7 @@ export const Voice = () => {
           {listening ? <i className="fa-solid fa-microphone fa-fade"></i> : <i className="fa-solid fa-microphone"></i>}
         </span>
       </div>
+      <button onClick={fetchToken}></button>
 
       {/* Loader */}
       {loading && (
@@ -83,8 +119,8 @@ export const Voice = () => {
       )}
 
       <div style={styles.grid}>
-        {productFilterList.length > 0
-          ? productFilterList.map((product, index) => (
+        {productFilterList?.length > 0
+          ? productFilterList?.map((product, index) => (
               <div key={index} style={styles.productCard}>
                 {product.media?.length > 0 && (
                   <img src={product.media[0].url} alt={product.name} style={styles.productImage} />

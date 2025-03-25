@@ -7,9 +7,12 @@ const serveStatic = require('serve-static');
 const { readFileSync } = require('fs');
 const { setupFdk } = require('@gofynd/fdk-extension-javascript/express');
 const { SQLiteStorage } = require('@gofynd/fdk-extension-javascript/express/storage');
+const axios = require('axios');
 
 const sqliteInstance = new sqlite3.Database('recently_viewed.db');
 const productRouter = express.Router();
+const companyRouter = express.Router();
+const applicationRouter = express.Router();
 
 console.log('EXTENSION_API_KEY:', process.env.EXTENSION_API_KEY);
 console.log('EXTENSION_API_SECRET:', process.env.EXTENSION_API_SECRET);
@@ -50,7 +53,7 @@ const STATIC_PATH =
   process.env.NODE_ENV === 'production'
     ? path.join(process.cwd(), 'frontend', 'public', 'dist')
     : path.join(process.cwd(), 'frontend');
-    
+
 const app = express();
 const platformApiRoutes = fdkExtension.platformApiRoutes;
 
@@ -167,9 +170,9 @@ productRouter.get('/applications/:application_id', async (req, res, next) => {
       if (brand?.name) allBrands.add(brand.name.toLowerCase());
       if (category_slug) allCategories.add(category_slug.toLowerCase().replace(/-/g, ' '));
       // if (color) allColors.add(color.toLowerCase());
-       if (color) {
-         color.split(',').forEach((col) => allColors.add(col.trim().toLowerCase()));
-       }
+      if (color) {
+        color.split(',').forEach((col) => allColors.add(col.trim().toLowerCase()));
+      }
     });
 
     console.log(allColors);
@@ -237,6 +240,61 @@ productRouter.get('/applications/:application_id', async (req, res, next) => {
   }
 });
 
+companyRouter.get('/all-token', async (req, res, next) => {
+  try {
+    console.log('Fetching company ID...');
+    const { company_id } = req.query;
+    const { platformClient } = req;
+
+    if (!platformClient) {
+      return res.status(401).json({ message: 'Platform client is not available' });
+    }
+
+    const companyId = platformClient.config.companyId;
+    console.log(companyId);
+    return res.json({ companyId });
+  } catch (error) {
+    console.error('Error fetching company ID:', error);
+    next(error);
+  }
+});
+
+applicationRouter.get('/all-applications', async (req, res, next) => {
+  try {
+    console.log('Fetching all applications...');
+
+    const { platformClient } = req;
+    const { company_id } = req.query;
+
+    if (!company_id) {
+      return res.status(400).json({ message: 'Company ID is required' });
+    }
+
+    if (!platformClient) {
+      return res.status(401).json({ message: 'Platform client is not available' });
+    }
+
+    const token = platformClient.config.oauthClient.token;
+    const apiUrl = `${platformClient.config.domain}/service/platform/configuration/v1.0/company/${company_id}/application?page_no=1&page_size=10`;
+
+    const { data } = await axios.get(apiUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const applications =
+      data?.items?.map(({ _id, name, logo }) => ({
+        _id,
+        name,
+        logo: logo?.secure_url || null,
+      })) || [];
+
+    return res.json(applications);
+  } catch (err) {
+    console.error('Error fetching applications:', err.message);
+    return res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+});
+
 /**
  * Extracts filters dynamically from user query
  */
@@ -251,7 +309,7 @@ function extractFiltersFromQuery(query, brands, categories, colors) {
   // filters.category = Array.from(categories).find((c) => new RegExp(`\\b${c}\\b`).test(lowerQuery)) || null;
   // filters.color = Array.from(colors).find((col) => new RegExp(`\\b${col}\\b`).test(lowerQuery)) || null;
   // filters.keyword = lowerQuery.includes('name') ? lowerQuery.replace('name', '').trim() : null;
-  
+
   // Extract exact match for brand
   filters.brand = Array.from(brands).find((b) => lowerQuery.includes(b)) || null;
 
@@ -295,20 +353,16 @@ function extractFiltersFromQuery(query, brands, categories, colors) {
 }
 
 // Mount product routes
-
 platformApiRoutes.use('/products', productRouter);
+
+// Mount company
+platformApiRoutes.use('/company', companyRouter);
+
+// Mount application
+platformApiRoutes.use('/application', applicationRouter);
 
 // API routes
 app.use('/api', platformApiRoutes);
-
-// Test route
-app.get('/test', (req, res) => {
-  try {
-    res.json({ message: 'Public route working!' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Serve React app for all other routes
 app.get('*', (req, res) => {
