@@ -10,7 +10,8 @@
   },
   "nodemonConfig": {
     "ignore": [
-      "frontend/**"
+      "frontend/**",
+      "company.json"
     ]
   },
   "dependencies": {

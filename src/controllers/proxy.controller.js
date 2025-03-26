@@ -1,84 +1,79 @@
-const express = require('express');
-const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
-const path = require('path');
-const { readFileSync } = require('fs');
-const serveStatic = require('serve-static');
-const axios = require('axios');
-const { fdkExtension } = require('./fdkSetup/fdk');
-const proxyRoutes = require('./src/routes/proxy.routes');
+'use strict';
 
-// Constants
-const STATIC_PATH =
-  process.env.NODE_ENV === 'production'
-    ? path.join(process.cwd(), 'frontend', 'public', 'dist')
-    : path.join(process.cwd(), 'frontend');
+const config = require('./config');
+/**
+ * CreateProxy constructor
+ */
 
-// Initialize Express App
-const app = express();
-
-// Middleware
-app.use(cookieParser('ext.session'));
-app.use(express.json());
-app.use(bodyParser.json({ limit: '2mb' }));
-app.use(serveStatic(STATIC_PATH, { index: false }));
-
-// FDK Extension Handlers
-app.use('/', fdkExtension.fdkHandler);
-app.use('/', proxyRoutes);
-const apiProxyRoutes = fdkExtension.applicationProxyRoutes;
-proxyRoutes.use('/proxy', require('./src/routes/filter.routes'));
-app.use('/', apiProxyRoutes);
-
-// API Routes
-const platformApiRoutes = fdkExtension.platformApiRoutes;
-const productRouter = express.Router();
-const companyRouter = express.Router();
-const applicationRouter = express.Router();
-
-// Webhook Route
-app.post('/api/webhook-events', async (req, res) => {
+const { fdkExtension } = require('../../fdkSetup/fdk');
+exports.createProxy = async (req, res, next) => {
   try {
-    console.log(`Webhook Event: ${req.body.event} received`);
-    await fdkExtension.webhookRegistry.processWebhook(req);
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(`Error Processing ${req.body.event} Webhook:`, err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Product Routes
-productRouter.get('/', async (req, res, next) => {
-  try {
+    const payload = req.body;
+    // const app_id = '672ddc7346bed2c768faf043';
     const { platformClient } = req;
-    if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
-    const data = await platformClient.catalog.getProducts();
-    return res.json(data);
-  } catch (err) {
-    console.error('Error fetching products:', err);
-    next(err);
+    // const platformAppCli = platformClient.application(app_id);
+    const platformAppCli = platformClient.application(payload['app_id']);
+    const isProxyDefined = await addProxy(platformAppCli, config.extension);
+    return res.json({ status: isProxyDefined });
+  } catch (error) {
+    console.error('Error adding proxy URL:', error);
+    return next(error);
   }
-});
+};
 
-productRouter.get('/application/:application_id', async (req, res, next) => {
+/**
+ * DeleteProxy Controller
+ */
+exports.deleteProxy = async (req, res, next) => {
   try {
-    const { platformClient } = req;
-    const { application_id } = req.params;
-    if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
-    const data = await platformClient.application(application_id).catalog.getAppProducts();
-    return res.json(data);
-  } catch (err) {
-    console.error('Error fetching application products:', err);
-    next(err);
-  }
-});
+    const { app_id, attached_path } = req.body;
+    const platformClient = req.platformClient;
 
-productRouter.get('/applications/:application_id', async (req, res, next) => {
+    if (!app_id || !attached_path) {
+      return res.status(400).json({ message: 'Missing required fields: app_id and attached_path are both required.' });
+    }
+
+    const response = await platformClient.application(app_id).partner.removeProxyPath({
+      extensionId: process.env.EXTENSION_API_KEY,
+      attachedPath: attached_path,
+    });
+
+    return res.status(200).json({
+      message: 'Proxy URL deleted successfully',
+      data: response,
+    });
+  } catch (error) {
+    console.error('Error deleting proxy URL:', error);
+    return next(error);
+  }
+};
+
+const addProxy = async (platformAppCli, config) => {
+  let isProxyDefined = false;
+  // let { api_key, base_url } = config;
+  let api_key = '677cb8d2e9dd5873357d2bf2';
+  let base_url = fdkExtension.extension.configData.base_url;
+  console.log(base_url, 'BIRJU');
+  try {
+    let response = await platformAppCli.partner.addProxyPath({
+      extensionId: process.env.EXTENSION_API_KEY || api_key,
+      body: {
+        attached_path: 'db',
+        proxy_url: base_url,
+      },
+    });
+    isProxyDefined = true;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+exports.createFilter = async (req, res, next) => {
   try {
     console.log('Fetching products...');
     const { platformClient } = req;
-    const { application_id } = req.params;
+    // const { application_id } = req.params;
+    const application_id = '672ddc7346bed2c768faf043';
     const { query, sort_by, order = 'asc', page = 1, limit = 10 } = req.query;
 
     if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
@@ -166,7 +161,7 @@ productRouter.get('/applications/:application_id', async (req, res, next) => {
     console.error('Error fetching application products:', err);
     next(err);
   }
-});
+};
 
 /**
  * Extracts filters dynamically from user query
@@ -224,73 +219,3 @@ function extractFiltersFromQuery(query, brands, categories, colors) {
 
   return filters;
 }
-
-// Company Routes
-companyRouter.get('/all-token', async (req, res, next) => {
-  try {
-    const { platformClient } = req;
-    if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
-    return res.json({ companyId: platformClient.config.companyId });
-  } catch (error) {
-    console.error('Error fetching company ID:', error);
-    next(error);
-  }
-});
-
-// Application Routes
-applicationRouter.get('/all-applications', async (req, res, next) => {
-  try {
-    console.log(req, 'birju');
-    const { platformClient } = req;
-    const { company_id } = req.query;
-
-    if (!company_id) return res.status(400).json({ message: 'Company ID is required' });
-    if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
-
-    const token = platformClient.config.oauthClient.token;
-    let allApplications = [];
-    let page = 1;
-    let hasMore = true;
-
-    while (hasMore) {
-      const apiUrl = `${platformClient.config.domain}/service/platform/configuration/v1.0/company/${company_id}/application?page_no=${page}&page_size=10`;
-      const { data } = await axios.get(apiUrl, { headers: { Authorization: `Bearer ${token}` } });
-      if (data?.items?.length > 0) {
-        allApplications = [
-          ...allApplications,
-          ...data.items.map(({ _id, name, logo }) => ({ _id, name, logo: logo?.secure_url || null })),
-        ];
-        page++;
-      } else {
-        hasMore = false;
-      }
-    }
-    return res.json(allApplications);
-  } catch (err) {
-    console.error('Error fetching applications:', err.message);
-    return res.status(500).json({ message: 'Internal server error', error: err.message });
-  }
-});
-
-// Mount API Routes
-platformApiRoutes.use('/products', productRouter);
-platformApiRoutes.use('/company', companyRouter);
-platformApiRoutes.use('/application', applicationRouter);
-app.use('/api', platformApiRoutes);
-
-// Test Route
-app.get('/test', async (req, res) => {
-  const { platformClient } = req;
-  if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
-  console.log(platformClient);
-});
-
-// Serve React App for All Other Routes
-app.get('*', (req, res) => {
-  return res
-    .status(200)
-    .set('Content-Type', 'text/html')
-    .send(readFileSync(path.join(STATIC_PATH, 'index.html')));
-});
-
-module.exports = app;

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import urlJoin from 'url-join';
 
@@ -10,14 +11,25 @@ export const Voice = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false); // State for loader
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
-  const application_id = '672ddc7346bed2c768faf043';
-  const company_id = '9095';
-
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const { company_id } = useParams();
+  // const application_id = '672ddc7346bed2c768faf043';
+  const application_id = localStorage.getItem('application_id');
+  // const company_id = '9095';
+  // const company_id = localStorage.getItem('company_id');
   let silenceTimer = null;
+ 
+
+
+  useEffect(() => {
+    fetchApplications();
+    // fetchToken();
+  }, []);
 
   useEffect(() => {
     // fetchToken();
-    fetchApplications();
+    // fetchApplications();
     if (listening) {
       setSearchQuery(transcript);
 
@@ -63,12 +75,12 @@ export const Voice = () => {
   const fetchToken = async () => {
     try {
       const { data } = await axios.get(urlJoin(EXAMPLE_MAIN_URL, '/api/company/all-token'), {
-        params: { company_id },
+        params: { company_id: company_id },
       });
-
+      console.log(data);
       if (data?.companyId) {
-        localStorage.setItem('company_ID', data.companyId);
-        console.log('Token saved successfully');
+        localStorage.setItem('company_id', data.companyId);
+        console.log('Company ID saved successfully');
       } else {
         console.warn('Company ID not found in response');
       }
@@ -80,19 +92,21 @@ export const Voice = () => {
   const fetchApplications = async () => {
     try {
       const response = await axios.get(urlJoin(EXAMPLE_MAIN_URL, '/api/application/all-applications'), {
-        params: { company_id },
+        params: { company_id: company_id },
         headers: {
           'Content-Type': 'application/json',
         },
       });
-
+      if (response.data) {
+        setCompanies(response.data); // Save fetched applications in state
+      }
       console.log('Applications:', response.data);
       return response.data; // Return data for further use if needed
     } catch (error) {
       console.error('Error fetching applications:', error.message);
     }
   };
-  
+
   const stripHtml = (html) => {
     html = html.replace(/<style[^>]*>.*?<\/style>/gs, '');
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -103,53 +117,85 @@ export const Voice = () => {
     <div style={styles.container}>
       <h2 style={styles.title}>Voice Search for Products</h2>
 
-      <div style={styles.inputContainer}>
-        <input type="text" value={searchQuery} placeholder="Search for products..." readOnly style={styles.input} />
-        <span onClick={toggleListening} style={styles.micButton}>
-          {listening ? <i className="fa-solid fa-microphone fa-fade"></i> : <i className="fa-solid fa-microphone"></i>}
-        </span>
+      <div style={styles.companyWrapper}>
+        {companies.map((company) => (
+          <div
+            key={company._id}
+            style={{
+              ...styles.companyBox,
+              backgroundColor: application_id === company._id ? '#007bff' : '#f8f9fa',
+              color: application_id === company._id ? '#fff' : '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '10px',
+              cursor: 'pointer',
+            }}
+            onClick={() => {
+              localStorage.setItem('application_id', company._id);
+              setSelectedCompany(company); // Update selected company
+            }}
+          >
+            <img src={company.logo} alt={company.name} style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+            {company.name}
+          </div>
+        ))}
       </div>
-      <button onClick={fetchToken}></button>
 
-      {/* Loader */}
-      {loading && (
-        <div style={styles.loader}>
-          <i className="fa-solid fa-spinner fa-spin"></i> Loading...
-        </div>
+      {/* Show Voice Search only if a company is selected */}
+      {selectedCompany && (
+        <>
+          <div style={styles.inputContainer}>
+            <input type="text" value={searchQuery} placeholder="Search for products..." readOnly style={styles.input} />
+            <span onClick={toggleListening} style={styles.micButton}>
+              {listening ? (
+                <i className="fa-solid fa-microphone fa-fade"></i>
+              ) : (
+                <i className="fa-solid fa-microphone"></i>
+              )}
+            </span>
+          </div>
+
+          {loading && (
+            <div style={styles.loader}>
+              <i className="fa-solid fa-spinner fa-spin"></i> Loading...
+            </div>
+          )}
+
+          <div style={styles.grid}>
+            {productFilterList?.length > 0
+              ? productFilterList.map((product, index) => (
+                  <div key={index} style={styles.productCard}>
+                    {product.media?.length > 0 && (
+                      <img src={product.media[0].url} alt={product.name} style={styles.productImage} />
+                    )}
+                    <div style={styles.productDetails}>
+                      <h3 style={styles.productName}>{product.name}</h3>
+                      <p>
+                        <strong>Brand:</strong> {product.brand?.name || 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Category:</strong> {product.category_slug || 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Color:</strong> {product.color || 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Price:</strong>{' '}
+                        {product.price?.effective?.min
+                          ? `${product.price.effective.currency_symbol || '₹'}${product.price.effective.min}`
+                          : 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Description:</strong> {stripHtml(product.description) || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              : searchQuery && !loading && <p style={styles.noResults}>No products found. Try another search.</p>}
+          </div>
+        </>
       )}
-
-      <div style={styles.grid}>
-        {productFilterList?.length > 0
-          ? productFilterList?.map((product, index) => (
-              <div key={index} style={styles.productCard}>
-                {product.media?.length > 0 && (
-                  <img src={product.media[0].url} alt={product.name} style={styles.productImage} />
-                )}
-                <div style={styles.productDetails}>
-                  <h3 style={styles.productName}>{product.name}</h3>
-                  <p>
-                    <strong>Brand:</strong> {product.brand?.name || 'N/A'}
-                  </p>
-                  <p>
-                    <strong>Category:</strong> {product.category_slug || 'N/A'}
-                  </p>
-                  <p>
-                    <strong>Color:</strong> {product.color || 'N/A'}
-                  </p>
-                  <p>
-                    <strong>Price:</strong>{' '}
-                    {product.price?.effective?.min
-                      ? `${product.price.effective.currency_symbol || '₹'}${product.price.effective.min}`
-                      : 'N/A'}
-                  </p>
-                  <p>
-                    <strong>Description:</strong> {stripHtml(product.description) || 'N/A'}
-                  </p>
-                </div>
-              </div>
-            ))
-          : searchQuery && !loading && <p style={styles.noResults}>No products found. Try another search.</p>}
-      </div>
     </div>
   );
 };
@@ -237,5 +283,22 @@ const styles = {
     textAlign: 'center',
     color: '#718096',
     marginTop: '10px',
+  },
+  companyWrapper: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '10px',
+    marginBottom: '20px',
+    justifyContent: 'center',
+  },
+
+  companyBox: {
+    padding: '10px 15px',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'background 0.3s, color 0.3s',
+    minWidth: '120px',
+    textAlign: 'center',
   },
 };
