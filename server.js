@@ -51,6 +51,7 @@ app.post('/api/webhook-events', async (req, res) => {
 // Product Routes
 productRouter.get('/', async (req, res, next) => {
   try {
+    console.log("TEST");
     const { platformClient } = req;
     if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
     const data = await platformClient.catalog.getProducts();
@@ -243,7 +244,7 @@ applicationRouter.get('/all-applications', async (req, res, next) => {
     console.log(req, 'birju');
     const { platformClient } = req;
     const { company_id } = req.query;
-
+    console.log(platformClient);
     if (!company_id) return res.status(400).json({ message: 'Company ID is required' });
     if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
 
@@ -273,7 +274,13 @@ applicationRouter.get('/all-applications', async (req, res, next) => {
 });
 
 // Mount API Routes
-platformApiRoutes.use('/products', productRouter);
+platformApiRoutes.use(
+  '/products',
+  (req, res) => {
+    console.log(req, 'request');
+  },
+  productRouter
+);
 platformApiRoutes.use('/company', companyRouter);
 platformApiRoutes.use('/application', applicationRouter);
 app.use('/api', platformApiRoutes);

@@ -8,13 +8,18 @@ const config = require('./config');
 const { fdkExtension } = require('../../fdkSetup/fdk');
 exports.createProxy = async (req, res, next) => {
   try {
+    console.log(req);
     const payload = req.body;
     // const app_id = '672ddc7346bed2c768faf043';
     const { platformClient } = req;
     // const platformAppCli = platformClient.application(app_id);
     const platformAppCli = platformClient.application(payload['app_id']);
-    const isProxyDefined = await addProxy(platformAppCli, config.extension);
-    return res.json({ status: isProxyDefined });
+    const isProxyDefined = addProxy(platformAppCli, config.extension).then(
+       res.json({ status: isProxyDefined })
+    ).catch(
+      console.error('Error adding proxy URL')
+    )
+    // return res.json({ status: isProxyDefined });
   } catch (error) {
     console.error('Error adding proxy URL:', error);
     return next(error);
