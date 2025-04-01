@@ -13,14 +13,14 @@ export const Voice = () => {
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const { company_id } = useParams();
+  const { company_id , application_id} = useParams();
   // const application_id = '672ddc7346bed2c768faf043';
-  const application_id = localStorage.getItem('application_id');
+  // const application_id = localStorage.getItem('application_id');
   // const company_id = '9095';
   // const company_id = localStorage.getItem('company_id');
   let silenceTimer = null;
  
-
+  console.log(application_id, company_id,"IDS");
 
   useEffect(() => {
     fetchApplications();

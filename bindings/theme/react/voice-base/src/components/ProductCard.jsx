@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
-export function VoiceButton() {
+export function ProductCard() {
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -22,3 +22,5 @@ export function VoiceButton() {
     </div>
   );
 }
+
+// export default ProductCard;

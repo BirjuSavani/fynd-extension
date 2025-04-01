@@ -1,21 +1,23 @@
-import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useSpeechRecognition } from 'react-speech-recognition';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { VoiceButton } from '../components/ProductCard';
+import { useSpeechRecognition } from 'react-speech-recognition';
+import { ProductCard } from '../components/ProductCard';
 
 export function Component({ props }) {
   const application_id = '672ddc7346bed2c768faf043';
-  // const application_id = localStorage.getItem('application_id');
   const company_id = '9095';
-
-  // const company_id = localStorage.getItem('company_id');
   const [productFilterList, setProductFilterList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState([]);
 
   const { transcript } = useSpeechRecognition();
+
+  const state = fpi.store.getState();
+  const id = window.APP_DATA.applicationID;
+  const company = fpi.getters.THEME(state)?.company_id;
+  console.log(id, company, 'ID and Company');
 
   useEffect(() => {
     fetchApplications();
@@ -32,10 +34,13 @@ export function Component({ props }) {
     if (!query) return;
     setLoading(true);
     try {
-      const { data } = await axios.get(`/api/products/applications/${application_id}`, {
-        headers: { 'x-company-id': company_id },
-        params: { query },
-      });
+      const { data } = await axios.get(
+        `https://gel-frog-slides-governance.trycloudflare.com/api/products/applications/${application_id}`,
+        {
+          headers: { 'x-company-id': company_id },
+          params: { query },
+        }
+      );
       setProductFilterList(data.items);
     } catch (e) {
       console.error('Error fetching products:', e);
@@ -45,10 +50,13 @@ export function Component({ props }) {
 
   const fetchApplications = async () => {
     try {
-      const { data } = await axios.get('/api/application/all-applications', {
-        params: { company_id },
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const { data } = await axios.get(
+        'https://gel-frog-slides-governance.trycloudflare.com/api/application/all-applications',
+        {
+          params: { company_id },
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
       setCompanies(data);
     } catch (error) {
       console.error('Error fetching applications:', error);
@@ -64,7 +72,7 @@ export function Component({ props }) {
       </Helmet>
       <h1>{title}</h1>
 
-      <VoiceButton />
+      <ProductCard />
     </div>
   );
 }
@@ -80,19 +88,8 @@ export const settings = {
       default: 'Voice Search',
       info: 'Title of the voice search page.',
     },
-    {
-      id: 'accessToken',
-      label: 'Access Token',
-      type: 'text',
-      default: '',
-      required: true,
-      info: 'Your API access token.',
-    },
   ],
   blocks: [],
 };
 
-export default {
-  Component,
-  settings,
-};
+// export { Component, settings };

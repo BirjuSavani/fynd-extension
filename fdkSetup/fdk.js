@@ -13,9 +13,11 @@ const fdkExtension = setupFdk({
     auth: async (req, res) => {
       const companyId = req.extension?.company_id || req.query.company_id;
       console.log('Extracted Company ID:', companyId);
-
+      const applicationId = req.extension?.application_id || req.query.application_id;
+      console.log(applicationId, 'applicationId');
       // Save companyId in storage
       await req.extension.storage.set('company_id', companyId);
+      await req.extension.storage.set('app_id', applicationId);
 
       // return `${req.extension.base_url}/company/${req.query.company_id}`;
       if (req.query.application_id) {
