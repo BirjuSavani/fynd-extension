@@ -14,10 +14,10 @@ export function Component({ props }) {
 
   const { transcript } = useSpeechRecognition();
 
-  const state = fpi.store.getState();
-  const id = window.APP_DATA.applicationID;
-  const company = fpi.getters.THEME(state)?.company_id;
-  console.log(id, company, 'ID and Company');
+  // const state = fpi.store.getState();
+  // const id = window.APP_DATA.applicationID;
+  // const company = fpi.getters.THEME(state)?.company_id;
+  // console.log(id, company, 'ID and Company');
 
   useEffect(() => {
     fetchApplications();
