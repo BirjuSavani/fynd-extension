@@ -97,6 +97,7 @@ export const Voice = () => {
           'Content-Type': 'application/json',
         },
       });
+      console.log(response,'DATA')
       if (response.data) {
         setCompanies(response.data); // Save fetched applications in state
       }
@@ -118,7 +119,7 @@ export const Voice = () => {
       <h2 style={styles.title}>Voice Search for Products</h2>
 
       <div style={styles.companyWrapper}>
-        {companies.map((company) => (
+        {companies?.map((company) => (
           <div
             key={company._id}
             style={{

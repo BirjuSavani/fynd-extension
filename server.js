@@ -7,7 +7,7 @@ const serveStatic = require('serve-static');
 const axios = require('axios');
 const { fdkExtension } = require('./fdkSetup/fdk');
 const proxyRoutes = require('./src/routes/proxy.routes');
-
+const cors = require('cors');
 // Constants
 const STATIC_PATH =
   process.env.NODE_ENV === 'production'
@@ -17,6 +17,15 @@ const STATIC_PATH =
 // Initialize Express App
 const app = express();
 
+app.use(
+  cors({
+    origin: '*',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  })
+);
+
 // Middleware
 app.use(cookieParser('ext.session'));
 app.use(express.json());
@@ -25,10 +34,10 @@ app.use(serveStatic(STATIC_PATH, { index: false }));
 
 // FDK Extension Handlers
 app.use('/', fdkExtension.fdkHandler);
-app.use('/', proxyRoutes);
-const apiProxyRoutes = fdkExtension.applicationProxyRoutes;
-proxyRoutes.use('/proxy', require('./src/routes/filter.routes'));
-app.use('/', apiProxyRoutes);
+// app.use('/', proxyRoutes);
+// const apiProxyRoutes = fdkExtension.applicationProxyRoutes;
+// proxyRoutes.use('/proxy', require('./src/routes/filter.routes'));
+// app.use('/', apiProxyRoutes);
 
 // API Routes
 const platformApiRoutes = fdkExtension.platformApiRoutes;
@@ -79,7 +88,9 @@ productRouter.get('/applications/:application_id', async (req, res, next) => {
   try {
     console.log('Fetching products...');
     const { platformClient } = req;
+    console.log(platformClient);
     const { application_id } = req.params;
+
     const { query, sort_by, order = 'asc', page = 1, limit = 10 } = req.query;
 
     if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
@@ -243,7 +254,7 @@ applicationRouter.get('/all-applications', async (req, res, next) => {
   try {
     const { platformClient } = req;
     const { company_id } = req.query;
-   
+
     if (!company_id) return res.status(400).json({ message: 'Company ID is required' });
     if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
 
@@ -277,6 +288,7 @@ platformApiRoutes.use('/products', productRouter);
 platformApiRoutes.use('/company', companyRouter);
 platformApiRoutes.use('/application', applicationRouter);
 app.use('/api', platformApiRoutes);
+
 
 // Test Route
 app.get('/test', async (req, res) => {
