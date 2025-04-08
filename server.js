@@ -6,8 +6,7 @@ const { readFileSync } = require('fs');
 const serveStatic = require('serve-static');
 const axios = require('axios');
 const { fdkExtension } = require('./fdkSetup/fdk');
-const proxyRoutes = require('./src/routes/proxy.routes');
-const cors = require('cors');
+
 // Constants
 const STATIC_PATH =
   process.env.NODE_ENV === 'production'
@@ -17,33 +16,40 @@ const STATIC_PATH =
 // Initialize Express App
 const app = express();
 
-app.use(
-  cors({
-    origin: '*',
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  })
-);
-
 // Middleware
 app.use(cookieParser('ext.session'));
 app.use(express.json());
 app.use(bodyParser.json({ limit: '2mb' }));
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
-// FDK Extension Handlers
-app.use('/', fdkExtension.fdkHandler);
-// app.use('/', proxyRoutes);
-// const apiProxyRoutes = fdkExtension.applicationProxyRoutes;
-// proxyRoutes.use('/proxy', require('./src/routes/filter.routes'));
-// app.use('/', apiProxyRoutes);
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Company-ID');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
 
 // API Routes
 const platformApiRoutes = fdkExtension.platformApiRoutes;
 const productRouter = express.Router();
 const companyRouter = express.Router();
 const applicationRouter = express.Router();
+
+// Mount API Routes
+platformApiRoutes.use('/products', productRouter);
+platformApiRoutes.use('/company', companyRouter);
+platformApiRoutes.use('/application', applicationRouter);
+
+// FDK Extension Handlers
+app.use('/api', platformApiRoutes);
+
+app.use('/', fdkExtension.fdkHandler);
 
 // Webhook Route
 app.post('/api/webhook-events', async (req, res) => {
@@ -84,12 +90,16 @@ productRouter.get('/application/:application_id', async (req, res, next) => {
   }
 });
 
-productRouter.get('/applications/:application_id', async (req, res, next) => {
+applicationRouter.get('/', async (req, res, next) => {
   try {
     console.log('Fetching products...');
     const { platformClient } = req;
-    console.log(platformClient);
-    const { application_id } = req.params;
+    const { company_id } = req.query;
+    const { application_id } = req.query;
+
+    if (!company_id) return res.status(400).json({ message: 'Company ID is required' });
+    if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
+    if (!application_id) return res.status(400).json({ message: 'Application ID is required' });
 
     const { query, sort_by, order = 'asc', page = 1, limit = 10 } = req.query;
 
@@ -282,13 +292,6 @@ applicationRouter.get('/all-applications', async (req, res, next) => {
     return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 });
-
-// Mount API Routes
-platformApiRoutes.use('/products', productRouter);
-platformApiRoutes.use('/company', companyRouter);
-platformApiRoutes.use('/application', applicationRouter);
-app.use('/api', platformApiRoutes);
-
 
 // Test Route
 app.get('/test', async (req, res) => {

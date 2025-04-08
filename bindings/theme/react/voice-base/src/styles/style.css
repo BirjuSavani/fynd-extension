@@ -1,7 +1,124 @@
-.product {
+/* .product {
     color: red;
     border: 1px solid red
 }
 .container {
     display: flex;
+} */
+
+/* Container */
+.voice-search-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+  max-width: 1200px;
+  margin: auto;
+  background: #fff;
+  color: #222;
+}
+
+/* Title */
+.title {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+  font-weight: 600;
+}
+
+/* Microphone Button */
+.mic-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.mic-button {
+  background-color: #e53935;
+  border: none;
+  color: white;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  font-size: 36px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.mic-button:hover {
+  transform: scale(1.1);
+}
+
+.mic-button.listening {
+  background-color: #43a047;
+}
+
+/* Transcript & Listening Feedback */
+.voice-feedback {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.transcript {
+  font-style: italic;
+  color: #555;
+  margin-top: 8px;
+}
+
+/* Product Results */
+.results-container {
+  margin-top: 30px;
+}
+
+.results-title {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+/* Product Grid */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  padding: 0 10px;
+}
+
+.product-card {
+  background-color: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 15px;
+  transition: box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.product-card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.price {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #e53935;
+}
+
+.no-results {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #888;
+  margin-top: 30px;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #888;
+  margin-top: 30px;
 }

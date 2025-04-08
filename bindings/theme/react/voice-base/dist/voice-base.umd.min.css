@@ -1,7 +1,124 @@
-.gONOQ {
+/* .product {
     color: red;
     border: 1px solid red
 }
-.aQaT4 {
+.container {
     display: flex;
+} */
+
+/* Container */
+.DGfYL {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+  max-width: 1200px;
+  margin: auto;
+  background: #fff;
+  color: #222;
+}
+
+/* Title */
+.Cu3BG {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+  font-weight: 600;
+}
+
+/* Microphone Button */
+.mTxYG {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.MN8om {
+  background-color: #e53935;
+  border: none;
+  color: white;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  font-size: 36px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.MN8om:hover {
+  transform: scale(1.1);
+}
+
+.MN8om.vvGDM {
+  background-color: #43a047;
+}
+
+/* Transcript & Listening Feedback */
+.Jwz77 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.qjEsH {
+  font-style: italic;
+  color: #555;
+  margin-top: 8px;
+}
+
+/* Product Results */
+.H6NHv {
+  margin-top: 30px;
+}
+
+.YielU {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+/* Product Grid */
+.nFh82 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  padding: 0 10px;
+}
+
+.kcSlx {
+  background-color: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 15px;
+  transition: box-shadow 0.3s ease;
+}
+
+.kcSlx:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.kcSlx h3 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.q7Ot2 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #e53935;
+}
+
+.TBPKG {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #888;
+  margin-top: 30px;
+}
+
+/* Loading */
+.K4e7q {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #888;
+  margin-top: 30px;
 }
