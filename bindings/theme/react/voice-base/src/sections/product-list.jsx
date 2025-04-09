@@ -15,7 +15,9 @@ export function Component({ props }) {
   const [isVoiceSearchActive, setIsVoiceSearchActive] = useState(false);
 
   // Define base URL to avoid repeated strings
-  const API_BASE_URL = 'https://lending-blowing-fl-real.trycloudflare.com';
+  // const API_BASE_URL = 'https://lending-blowing-fl-real.trycloudflare.com';
+  const API_BASE_URL = 'https://formerly-perfume-takes-gibson.trycloudflare.com/api/application';
+  // const API_BASE_URL_2 = '/api';
 
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
@@ -71,14 +73,14 @@ export function Component({ props }) {
     setLoading(true);
     console.log('Fetching products with query:', query);
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/api/application`, {
+      const { data } = await axios.get(`${API_BASE_URL}/${application_id}/products`, {
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         params: {
           query: query,
           company_id: company_id,
-          application_id: application_id,
         },
         withCredentials: true,
       });
@@ -93,9 +95,9 @@ export function Component({ props }) {
 
   const fetchApplications = async () => {
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/api/application/all-applications`, {
+      const { data } = await axios.get(`${API_BASE_URL}/all-applications`, {
         params: { company_id },
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         withCredentials: true,
       });
       setCompanies(data);
@@ -249,7 +251,6 @@ export function Component({ props }) {
       </div>
     </div>
   );
-
 }
 
 export const settings = {

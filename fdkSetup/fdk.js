@@ -46,5 +46,9 @@ const fdkExtension = setupFdk({
   },
 });
 // console.log(fdkExtension);
-console.log(fdkExtension.extension.configData.base_url, 'base url');
-module.exports = { fdkExtension };
+console.log(`Base URL: ${fdkExtension.extension.configData.base_url}`);
+
+const extensionId = fdkExtension.extension.api_key;
+console.log(`Extension ID: ${extensionId}`);
+
+module.exports = { fdkExtension, extensionId };
