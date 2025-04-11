@@ -61,10 +61,13 @@ export const Voice = () => {
     if (!query) return;
     setLoading(true); // Show loader when fetching starts
     try {
-      const { data } = await axios.get(urlJoin(EXAMPLE_MAIN_URL, `/api/products/applications/${application_id}`), {
-        headers: { 'x-company-id': company_id },
-        params: { query },
-      });
+      const { data } = await axios.get(
+        urlJoin(EXAMPLE_MAIN_URL, `/api/platform/products/applications/${application_id}`),
+        {
+          headers: { 'x-company-id': company_id },
+          params: { query },
+        }
+      );
       setProductFilterList(data.items);
     } catch (e) {
       console.error('Error fetching application products:', e);
@@ -74,7 +77,7 @@ export const Voice = () => {
 
   const fetchToken = async () => {
     try {
-      const { data } = await axios.get(urlJoin(EXAMPLE_MAIN_URL, '/api/company/all-token'), {
+      const { data } = await axios.get(urlJoin(EXAMPLE_MAIN_URL, '/api/platform/company/all-token'), {
         params: { company_id: company_id },
       });
       console.log(data);
@@ -91,7 +94,7 @@ export const Voice = () => {
 
   const fetchApplications = async () => {
     try {
-      const response = await axios.get(urlJoin(EXAMPLE_MAIN_URL, '/api/application/all-applications'), {
+      const response = await axios.get(urlJoin(EXAMPLE_MAIN_URL, '/api/platform/application/all-applications'), {
         params: { company_id: company_id },
         headers: {
           'Content-Type': 'application/json',

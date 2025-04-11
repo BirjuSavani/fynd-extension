@@ -50,5 +50,6 @@ console.log(`Base URL: ${fdkExtension.extension.configData.base_url}`);
 
 const extensionId = fdkExtension.extension.api_key;
 console.log(`Extension ID: ${extensionId}`);
+fdkExtension.getPlatformClient('9095');
 
 module.exports = { fdkExtension, extensionId };

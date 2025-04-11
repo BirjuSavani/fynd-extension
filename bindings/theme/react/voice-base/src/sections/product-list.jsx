@@ -16,8 +16,8 @@ export function Component({ props }) {
 
   // Define base URL to avoid repeated strings
   // const API_BASE_URL = 'https://lending-blowing-fl-real.trycloudflare.com';
-  const API_BASE_URL = 'https://formerly-perfume-takes-gibson.trycloudflare.com/api/application';
-  // const API_BASE_URL_2 = '/api';
+  const API_BASE_URL = 'https://than-flags-georgia-jurisdiction.trycloudflare.com/api/application';
+  const API_BASE_URL_2 = 'https://teacher-ian-bodies-enclosure.trycloudflare.com/ext/db/proxy';
 
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
@@ -73,7 +73,7 @@ export function Component({ props }) {
     setLoading(true);
     console.log('Fetching products with query:', query);
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/${application_id}/products`, {
+      const { data } = await axios.get(`${API_BASE_URL_2}/${application_id}/products`, {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
