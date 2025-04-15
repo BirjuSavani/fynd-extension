@@ -38,3 +38,6 @@ coverage/
 coverage_output.json
 # SQLite DB
 session_storage.db
+
+# logs
+/logs

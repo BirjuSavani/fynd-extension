@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { logger } = require('../utils/logger');
 
 // Helper function to extract filters from query
 function extractFiltersFromQuery(query, brands, categories, colors) {
@@ -49,21 +50,32 @@ function extractFiltersFromQuery(query, brands, categories, colors) {
 
 // Get all applications
 exports.getAllApplications = async (req, res, next) => {
+  const requestId = req.requestId || 'unknown';
+
   try {
     const { platformClient } = req;
     const { company_id } = req.query;
 
-    if (!company_id) return res.status(400).json({ message: 'Company ID is required' });
-    if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
+    logger.info(`Fetching all applications for company_id: ${company_id}`, { requestId, company_id });
+
+    if (!company_id) {
+      logger.warn('Missing company_id in request', { requestId });
+      return res.status(400).json({ message: 'Company ID is required' });
+    }
+
+    if (!platformClient) {
+      logger.error('Platform client not available', { requestId });
+      return res.status(401).json({ message: 'Platform client is not available' });
+    }
 
     const token = platformClient.config.oauthClient.token;
-    // console.log(token, 'token');
     let allApplications = [];
     let page = 1;
     let hasMore = true;
 
     while (hasMore) {
       const apiUrl = `${platformClient.config.domain}/service/platform/configuration/v1.0/company/${company_id}/application?page_no=${page}&page_size=10`;
+      logger.debug(`Requesting applications page ${page}`, { requestId, url: apiUrl });
       const { data } = await axios.get(apiUrl, { headers: { Authorization: `Bearer ${token}` } });
       if (data?.items?.length > 0) {
         allApplications = [
@@ -71,36 +83,70 @@ exports.getAllApplications = async (req, res, next) => {
           ...data.items.map(({ _id, name, logo }) => ({ _id, name, logo: logo?.secure_url || null })),
         ];
         page++;
+        logger.debug(`Received ${data.items.length} applications, total so far: ${allApplications.length}`, {
+          requestId,
+        });
       } else {
         hasMore = false;
       }
     }
+    logger.info(`Successfully fetched ${allApplications.length} applications`, {
+      requestId,
+      count: allApplications.length,
+    });
     return res.json(allApplications);
   } catch (err) {
-    console.error('Error fetching applications:', err.message);
+    logger.error('Error fetching applications', {
+      requestId,
+      error: err.message,
+      stack: err.stack,
+    });
     return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 };
 
 // Get products for an application with filtering
 exports.getApplicationProducts = async (req, res, next) => {
+  console.log('req.query', req.query)
+  const requestId = req.requestId || 'unknown';
+
   try {
-    console.log('Fetching products...');
+    logger.info('Fetching products for application', { requestId });
+
     const { platformClient } = req;
     const { application_id } = req.params;
     const { company_id, query } = req.query;
 
-    if (!company_id) return res.status(400).json({ message: 'Company ID is required' });
-    if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
-    if (!application_id) return res.status(400).json({ message: 'Application ID is required' });
+    if (!company_id) {
+      logger.warn('Missing company_id in request', { requestId });
+      return res.status(400).json({ message: 'Company ID is required' });
+    }
+
+    if (!platformClient) {
+      logger.error('Platform client not available', { requestId });
+      return res.status(401).json({ message: 'Platform client is not available' });
+    }
+
+    if (!application_id) {
+      logger.warn('Missing application_id in request', { requestId });
+      return res.status(400).json({ message: 'Application ID is required' });
+    }
 
     const { sort_by, order = 'asc', page = 1, limit = 10 } = req.query;
 
     // Fetch products
+    logger.debug(`Fetching products from API for application: ${application_id}`, { requestId });
     const data = await platformClient.application(application_id).catalog.getAppProducts();
-    if (!data.items?.length) return res.json({ items: [] });
+    if (!data.items?.length) {
+      logger.info('No products found for application', { requestId, application_id });
+      return res.json({ items: [] });
+    }
 
-    console.log(`Found ${data.items.length} products for application ID: ${application_id}`);
+    logger.info(`Found ${data.items.length} products for application`, {
+      requestId,
+      application_id,
+      productCount: data.items.length,
+    });
 
     // Extract possible filter values
     const allBrands = new Set(),
@@ -115,10 +161,10 @@ exports.getApplicationProducts = async (req, res, next) => {
       }
     });
 
-    console.log(allColors);
+    // console.log(allColors);
     // Extract filters from query
     const filters = extractFiltersFromQuery(query, allBrands, allCategories, allColors);
-    console.log('Extracted filters:', filters);
+    logger.debug('Extracted filters from query', { requestId, filters, query });
 
     // Apply filters
     let filteredProducts = data.items.filter(({ brand, category_slug, color, price, name }) => {
@@ -139,7 +185,11 @@ exports.getApplicationProducts = async (req, res, next) => {
       );
     });
 
-    console.log(`Filtered ${filteredProducts.length} products based on query`);
+    logger.info(`Filtered to ${filteredProducts.length} products based on query`, {
+      requestId,
+      totalProducts: data.items.length,
+      filteredCount: filteredProducts.length,
+    });
 
     // Sorting logic
     if (sort_by) {
@@ -165,6 +215,13 @@ exports.getApplicationProducts = async (req, res, next) => {
     const startIndex = (page - 1) * limit;
     const paginatedProducts = filteredProducts.slice(startIndex, startIndex + parseInt(limit));
 
+    logger.info(`Returning ${paginatedProducts.length} products for page ${page}`, {
+      requestId,
+      pageNumber: page,
+      pageLimit: limit,
+      resultsCount: paginatedProducts.length,
+    });
+
     return res.json({
       items: paginatedProducts,
       total: filteredProducts.length,
@@ -173,7 +230,12 @@ exports.getApplicationProducts = async (req, res, next) => {
       has_next: startIndex + limit < filteredProducts.length,
     });
   } catch (err) {
-    console.error('Error fetching application products:', err);
+    logger.error('Error fetching application products', {
+      requestId,
+      application_id: req.params.application_id,
+      error: err.message,
+      stack: err.stack,
+    });
     next(err);
   }
 };

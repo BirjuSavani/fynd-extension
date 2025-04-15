@@ -5,6 +5,13 @@ const path = require('path');
 const { readFileSync } = require('fs');
 const serveStatic = require('serve-static');
 const { fdkExtension } = require('./fdkSetup/fdk');
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+const { logger, requestLogger } = require('./src/utils/logger');
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Import routes
 const productRoutes = require('./src/routes/productRoutes');
@@ -28,6 +35,9 @@ app.use(express.json());
 app.use(bodyParser.json({ limit: '2mb' }));
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
+// Apply request logger middleware - this will handle all request logging
+app.use(requestLogger);
+
 app.use(async (req, res, next) => {
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Origin', '*');
@@ -37,18 +47,18 @@ app.use(async (req, res, next) => {
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
   }
-  const ptClient = await fdkExtension.getPlatformClient('9095');
-  // console.log('ptclient-->', ptClient);
-  req.platformClient = ptClient;
-  // Request logging
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  next();
+  try {
+    const ptClient = await fdkExtension.getPlatformClient('9095');
+    req.platformClient = ptClient;
+    next();
+  } catch (error) {
+    logger.error(`Failed to get platform client: ${error.message}`, { error });
+    next(error);
+  }
 });
 
 // API Routes Setup
-
 const platformApiRoutes = fdkExtension.platformApiRoutes;
-// const platformApiRoutes = fdkExtension.applicationProxyRoutes;
 
 const applicationProxyRoutes = fdkExtension.applicationProxyRoutes;
 
@@ -70,8 +80,15 @@ app.use('/', fdkExtension.fdkHandler);
 
 app.get('/test', async (req, res) => {
   const { platformClient } = req;
-  if (!platformClient) return res.status(401).json({ message: 'Platform client is not available' });
-  console.log(platformClient);
+  if (!platformClient) {
+    logger.error('Platform client is not available for test endpoint');
+    return res.status(401).json({ message: 'Platform client is not available' });
+  }
+  logger.info('Test endpoint accessed with platform client', {
+    platformClientAvailable: true,
+    requestId: req.requestId,
+  });
+  res.json({ success: true });
 });
 
 // Serve React App for All Other Routes
@@ -84,7 +101,13 @@ app.get('*', (req, res) => {
 
 // Error Handler
 app.use((err, req, res, next) => {
-  console.error('Global error:', err);
+  logger.error('Global error', {
+    error: err.message,
+    stack: err.stack,
+    requestId: req.requestId,
+    path: req.originalUrl,
+  });
+
   res.status(500).json({ error: 'Internal Server Error' });
 });
 

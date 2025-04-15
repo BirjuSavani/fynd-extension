@@ -1,6 +1,7 @@
 const { setupFdk } = require('@gofynd/fdk-extension-javascript/express');
 const { SQLiteStorage } = require('@gofynd/fdk-extension-javascript/express/storage');
 const sqlite3 = require('sqlite3').verbose();
+const { logger } = require('../src/utils/logger');
 
 const sqliteInstance = new sqlite3.Database('session_storage.db');
 
@@ -12,9 +13,15 @@ const fdkExtension = setupFdk({
   callbacks: {
     auth: async (req, res) => {
       const companyId = req.extension?.company_id || req.query.company_id;
-      console.log('Extracted Company ID:', companyId);
       const applicationId = req.extension?.application_id || req.query.application_id;
-      console.log(applicationId, 'applicationId');
+      const requestId = req.requestId || 'unknown';
+
+      logger.info(`Authentication callback triggered`, {
+        requestId,
+        companyId,
+        applicationId,
+      });
+
       // Save companyId in storage
       await req.extension.storage.set('company_id', companyId);
       await req.extension.storage.set('app_id', applicationId);
@@ -27,7 +34,10 @@ const fdkExtension = setupFdk({
       }
     },
     uninstall: async (req) => {
+      const requestId = req.requestId || 'unknown';
+      logger.info('Uninstall callback triggered', { requestId });
       // Cleanup logic here
+      logger.debug('Performing uninstall cleanup actions', { requestId });
     },
   },
   storage: new SQLiteStorage(sqliteInstance, 'example-fynd-platform-extension'),
@@ -45,11 +55,12 @@ const fdkExtension = setupFdk({
     },
   },
 });
-// console.log(fdkExtension);
-console.log(`Base URL: ${fdkExtension.extension.configData.base_url}`);
+
+logger.info(`FDK Extension initialized with base URL: ${fdkExtension.extension.configData.base_url}`);
 
 const extensionId = fdkExtension.extension.api_key;
-console.log(`Extension ID: ${extensionId}`);
+logger.info(`Extension ID: ${extensionId}`);
+
 fdkExtension.getPlatformClient('9095');
 
 module.exports = { fdkExtension, extensionId };
