@@ -63,4 +63,8 @@ logger.info(`Extension ID: ${extensionId}`);
 
 fdkExtension.getPlatformClient('9095');
 
-module.exports = { fdkExtension, extensionId };
+const getPlatformClientAsync = async function () {
+  const ptClient = await fdkExtension.getPlatformClient('9095');
+  return ptClient;
+};
+module.exports = { fdkExtension, extensionId, getPlatformClientAsync };

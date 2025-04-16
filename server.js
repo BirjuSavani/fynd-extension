@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const { readFileSync } = require('fs');
 const serveStatic = require('serve-static');
-const { fdkExtension } = require('./fdkSetup/fdk');
+const { fdkExtension, pltClient, getPlatformClientAsync } = require('./fdkSetup/fdk');
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
@@ -48,7 +48,8 @@ app.use(async (req, res, next) => {
     return res.sendStatus(204);
   }
   try {
-    const ptClient = await fdkExtension.getPlatformClient('9095');
+    // const ptClient = await fdkExtension.getPlatformClient('9095');
+    const ptClient = await getPlatformClientAsync();
     req.platformClient = ptClient;
     next();
   } catch (error) {
