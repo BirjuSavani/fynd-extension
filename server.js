@@ -92,6 +92,16 @@ app.get('/test', async (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/health', (req, res) => {
+  try {
+    logger.info('Health endpoint accessed', { requestId: req.requestId });
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Error accessing health endpoint', { requestId: req.requestId, error });
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Serve React App for All Other Routes
 app.get('*', (req, res) => {
   return res

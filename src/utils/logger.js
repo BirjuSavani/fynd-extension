@@ -32,7 +32,9 @@ const errorFileTransport = new winston.transports.DailyRotateFile({
   maxFiles: '14d',
   level: 'error',
   format: winston.format.combine(
-    winston.format.timestamp({ format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss') }),
+    winston.format.timestamp({
+      format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss'),
+    }),
     winston.format.json()
   ),
 });
@@ -44,7 +46,9 @@ const combinedFileTransport = new winston.transports.DailyRotateFile({
   maxSize: '20m',
   maxFiles: '14d',
   format: winston.format.combine(
-    winston.format.timestamp({ format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss') }),
+    winston.format.timestamp({
+      format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss'),
+    }),
     winston.format.json()
   ),
 });
@@ -57,7 +61,9 @@ const accessFileTransport = new winston.transports.DailyRotateFile({
   maxFiles: '14d',
   level: 'http',
   format: winston.format.combine(
-    winston.format.timestamp({ format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss') }),
+    winston.format.timestamp({
+      format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss'),
+    }),
     winston.format.json()
   ),
 });
@@ -65,9 +71,22 @@ const accessFileTransport = new winston.transports.DailyRotateFile({
 // Console log formatting
 const colorizer = winston.format.colorize();
 const consoleFormat = winston.format.combine(
-  winston.format.timestamp({ format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss') }),
+  winston.format.timestamp({
+    format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss'),
+  }),
   winston.format.printf(
-    ({ level, message, timestamp, requestId, method, path, statusCode, responseTime, ip, user }) => {
+    ({
+      level,
+      message,
+      timestamp,
+      requestId,
+      method,
+      path,
+      statusCode,
+      responseTime,
+      ip,
+      user,
+    }) => {
       let logMessage = `${timestamp} [${level}]`;
 
       if (requestId) logMessage += ` [${requestId}]`;
@@ -105,14 +124,16 @@ const exceptionFileTransport = new winston.transports.DailyRotateFile({
   maxSize: '20m',
   maxFiles: '14d',
   format: winston.format.combine(
-    winston.format.timestamp({ format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss') }),
+    winston.format.timestamp({
+      format: () => dayjs().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss'),
+    }),
     winston.format.json()
   ),
 });
 
 logger.exceptions.handle(exceptionFileTransport);
 
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', err => {
   logger.error('Unhandled rejection', err);
 });
 
@@ -141,7 +162,7 @@ const requestLogger = (req, res, next) => {
       method: req.method,
       path: req.originalUrl,
       statusCode: res.statusCode,
-      responseTime,
+      responseTime: `${responseTime}ms`,
       message: `${req.method} ${req.originalUrl} ${res.statusCode} ${responseTime}ms`,
     });
 

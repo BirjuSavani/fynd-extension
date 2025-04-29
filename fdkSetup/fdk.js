@@ -33,7 +33,7 @@ const fdkExtension = setupFdk({
         return `${req.extension.base_url}/company/${req.query.company_id}`;
       }
     },
-    uninstall: async (req) => {
+    uninstall: async req => {
       const requestId = req.requestId || 'unknown';
       logger.info('Uninstall callback triggered', { requestId });
       // Cleanup logic here
@@ -47,7 +47,7 @@ const fdkExtension = setupFdk({
     notification_email: 'useremail@example.com',
     event_map: {
       'company/product/delete': {
-        handler: (eventName) => {
+        handler: eventName => {
           console.log(eventName);
         },
         version: '1',
@@ -56,7 +56,9 @@ const fdkExtension = setupFdk({
   },
 });
 
-logger.info(`FDK Extension initialized with base URL: ${fdkExtension.extension.configData.base_url}`);
+logger.info(
+  `FDK Extension initialized with base URL: ${fdkExtension.extension.configData.base_url}`
+);
 
 const extensionId = fdkExtension.extension.api_key;
 logger.info(`Extension ID: ${extensionId}`);
