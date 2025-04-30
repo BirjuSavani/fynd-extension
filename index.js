@@ -4,7 +4,7 @@ const { logger } = require('./src/utils/logger');
 const port = process.env.BACKEND_PORT || 8080;
 
 // Add process error handlers
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   logger.error('Uncaught Exception', { error: error.message, stack: error.stack });
   // Give logger time to flush before exiting
   setTimeout(() => {

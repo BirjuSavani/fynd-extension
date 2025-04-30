@@ -4,7 +4,7 @@ const applicationController = require('../controllers/applicationController');
 const apiRateLimiter = require('../middlewares/rateLimiter');
 
 // Trust proxy so IPs are correct behind Docker/Nginx
-router.set('trust proxy', true);
+// router.set('trust proxy', true);
 
 // Get all applications
 // This path should be accessible at the root of the applicationRoutes
