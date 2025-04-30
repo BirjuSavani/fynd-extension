@@ -9,6 +9,7 @@ const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
 const { logger, requestLogger } = require('./src/utils/logger');
+const cors = require('cors');
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -28,6 +29,13 @@ const STATIC_PATH =
 
 // Initialize Express App
 const app = express();
+
+app.use(
+  cors({
+    origin: 'https://intech-shoes.fynd.io', // or use function to allow specific origins
+    credentials: true,
+  })
+);
 
 // Middleware
 app.use(cookieParser('ext.session'));
