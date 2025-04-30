@@ -1,7 +1,7 @@
 require('dotenv').config();
 const app = require('./server');
 const { logger } = require('./src/utils/logger');
-const port = process.env.BACKEND_PORT || 8080;
+const port = process.env.BACKEND_PORT || 8081;
 
 // Add process error handlers
 process.on('uncaughtException', (error) => {

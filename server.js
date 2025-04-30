@@ -123,3 +123,5 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
+
+// sudo docker build -t fynd-extension .

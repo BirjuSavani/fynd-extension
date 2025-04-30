@@ -3,6 +3,9 @@ const router = express.Router();
 const applicationController = require('../controllers/applicationController');
 const apiRateLimiter = require('../middlewares/rateLimiter');
 
+// Trust proxy so IPs are correct behind Docker/Nginx
+router.set('trust proxy', true);
+
 // Get all applications
 // This path should be accessible at the root of the applicationRoutes
 router.get('/all-applications', applicationController.getAllApplications);
