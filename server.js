@@ -30,17 +30,10 @@ const STATIC_PATH =
 // Initialize Express App
 const app = express();
 
-// ✅ Dynamic CORS Setup
-const allowedOrigins = [
-  'http://127.0.0.1:8080',
-  'https://intech-shoes.fynd.io'
-];
-
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
+  
+  res.header('Access-Control-Allow-Origin', '*');
+
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Company-ID');
