@@ -54,25 +54,29 @@ const apiRateLimiter = rateLimit({
         companyId = queryParams.get('company_id');
       }
     }
-    
+
     // Backup: try to get company ID from platformClient if available
-    if (companyId === 'unknown' && req.platformClient && 
-        req.platformClient.config && req.platformClient.config.companyId) {
+    if (
+      companyId === 'unknown' &&
+      req.platformClient &&
+      req.platformClient.config &&
+      req.platformClient.config.companyId
+    ) {
       companyId = req.platformClient.config.companyId;
     }
-    
-    // Get client IP - either from headers or socket
-    let clientIp = req.headers['x-forwarded-for'] || 
-                   (req.socket && req.socket._peername ? 
-                    `${req.socket._peername.address}:${req.socket._peername.port}` : 
-                    'unknown');
-    
+
+    // Get client IP - only the first IP from x-forwarded-for
+    let clientIp =
+      (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
+      (req.socket && req.socket.remoteAddress) ||
+      'unknown';
+
     // Get requestId if available (unique per request but useful for logging)
     const requestId = req.requestId || '';
-    
+
     // For debugging
     console.log(`Rate limit key: company=${companyId}, app=${applicationId}, ip=${clientIp}`);
-    
+
     // Create a unique key that separates different users/companies
     return `${companyId}_${applicationId}_${clientIp}`;
   },
