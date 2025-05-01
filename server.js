@@ -30,20 +30,6 @@ const STATIC_PATH =
 // Initialize Express App
 const app = express();
 
-app.use((req, res, next) => {
-  
-  res.header('Access-Control-Allow-Origin', '*');
-
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
-  next();
-});
-
 // Middleware
 app.use(cookieParser('ext.session'));
 app.use(express.json());
@@ -53,15 +39,29 @@ app.use(serveStatic(STATIC_PATH, { index: false }));
 // Apply request logger middleware - this will handle all request logging
 app.use(requestLogger);
 
-app.use(async (req, res, next) => {
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Company-ID');
+const corsOptions = {
+  origin: true,
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Company-ID', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  maxAge: 86400, // 24 hours in seconds (86400)
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
 
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
+// Apply CORS middleware
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable preflight for all routes
+
+app.use(async (req, res, next) => {
+  // res.header('Access-Control-Allow-Credentials', 'true');
+  // res.header('Access-Control-Allow-Origin', '*');
+  // res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+  // res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Company-ID');
+
+  // if (req.method === 'OPTIONS') {
+  //   return res.sendStatus(204);
+  // }
   try {
     // const ptClient = await fdkExtension.getPlatformClient('9095');
     const ptClient = await getPlatformClientAsync();
@@ -127,6 +127,16 @@ app.get('*', (req, res) => {
 
 // Error Handler
 app.use((err, req, res, next) => {
+  // Handle CORS errors
+  if (err.message === 'Not allowed by CORS') {
+    logger.warn('CORS violation attempt', {
+      origin: req.headers.origin,
+      path: req.path,
+      requestId: req.requestId,
+    });
+    return res.status(403).json({ error: 'Origin not allowed' });
+  }
+
   logger.error('Global error', {
     error: err.message,
     stack: err.stack,
