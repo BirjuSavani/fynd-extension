@@ -223,12 +223,14 @@ exports.getApplicationProducts = async (req, res, next) => {
     });
 
     return res.json({
-      items: paginatedProducts,
-      total: filteredProducts.length,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      has_next: startIndex + limit < filteredProducts.length,
-    });
+      products: {
+        items: paginatedProducts,
+        total: filteredProducts.length,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        has_next: startIndex + limit < filteredProducts.length,
+      },
+    });``
   } catch (err) {
     logger.error('Error fetching application products', {
       requestId,
