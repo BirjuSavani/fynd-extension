@@ -42,8 +42,13 @@ app.use(requestLogger);
 // Environment-based CORS configuration
 const allowedOrigins =
   process.env.NODE_ENV === 'production'
-    ? ['https://intech-shoes.fynd.io', 'https://*.fynd.io', 'https://*.fynd.com']
-    : ['http://localhost:8080', 'https://intech-shoes.fynd.io'];
+    ? [
+        'https://intech-shoes.fynd.io',
+        'https://*.fynd.io',
+        'https://*.fynd.com',
+        'http://127.0.0.1:5001',
+      ]
+    : ['http://localhost:8080', 'http://127.0.0.1:5001', 'https://intech-shoes.fynd.io'];
 
 // Enhanced CORS configuration
 const corsOptions = {
