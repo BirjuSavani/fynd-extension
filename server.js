@@ -39,29 +39,56 @@ app.use(serveStatic(STATIC_PATH, { index: false }));
 // Apply request logger middleware - this will handle all request logging
 app.use(requestLogger);
 
+// Environment-based CORS configuration
+const allowedOrigins =
+  process.env.NODE_ENV === 'production'
+    ? ['https://intech-shoes.fynd.io', 'https://*.fynd.io', 'https://*.fynd.com']
+    : ['http://localhost:8080', 'https://intech-shoes.fynd.io'];
+
+// Enhanced CORS configuration
 const corsOptions = {
-  origin: true,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, or server-to-server requests)
+    if (!origin) return callback(null, true);
+
+    // Check against allowed origins
+    const originAllowed = allowedOrigins.some(allowedOrigin => {
+      // Exact match
+      if (origin === allowedOrigin) return true;
+
+      // Wildcard subdomain matching (e.g., *.fynd.io)
+      if (allowedOrigin.startsWith('https://*.') || allowedOrigin.startsWith('http://*.')) {
+        const domain = allowedOrigin.split('*.')[1];
+        return origin.endsWith(domain);
+      }
+
+      return false;
+    });
+
+    if (originAllowed) {
+      callback(null, true);
+    } else {
+      logger.warn(`CORS blocked for origin: ${origin}`, {
+        allowedOrigins,
+        path: req?.path,
+      });
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Company-ID', 'X-Requested-With'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  maxAge: 86400, // 24 hours in seconds (86400)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], // Fixed typo here
+  maxAge: 86400,
   preflightContinue: false,
   optionsSuccessStatus: 204,
 };
 
 // Apply CORS middleware
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Enable preflight for all routes
+app.options('*', cors(corsOptions));
 
+// Platform client middleware
 app.use(async (req, res, next) => {
-  // res.header('Access-Control-Allow-Credentials', 'true');
-  // res.header('Access-Control-Allow-Origin', '*');
-  // res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  // res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Company-ID');
-
-  // if (req.method === 'OPTIONS') {
-  //   return res.sendStatus(204);
-  // }
   try {
     // const ptClient = await fdkExtension.getPlatformClient('9095');
     const ptClient = await getPlatformClientAsync();
@@ -133,8 +160,14 @@ app.use((err, req, res, next) => {
       origin: req.headers.origin,
       path: req.path,
       requestId: req.requestId,
+      allowedOrigins,
+      environment: process.env.NODE_ENV,
     });
-    return res.status(403).json({ error: 'Origin not allowed' });
+    return res.status(403).json({
+      error: 'CORS Policy',
+      message: `Origin '${req.headers.origin}' not allowed`,
+      allowedOrigins: process.env.NODE_ENV === 'production' ? ['fynd.io domains'] : allowedOrigins,
+    });
   }
 
   logger.error('Global error', {
@@ -142,9 +175,10 @@ app.use((err, req, res, next) => {
     stack: err.stack,
     requestId: req.requestId,
     path: req.originalUrl,
+    headers: req.headers,
   });
 
-  res.status(500).json({ error: 'Internal Server Error' });
+  res.status(500).json({ error: 'Internal Server Error', requestId: req.requestId });
 });
 
 module.exports = app;
