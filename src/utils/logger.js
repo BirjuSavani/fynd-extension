@@ -28,8 +28,8 @@ const errorFileTransport = new winston.transports.DailyRotateFile({
   filename: path.join(datedLogDir, 'error-%DATE%.log'),
   datePattern: 'YYYY-MM-DD',
   zippedArchive: true,
-  maxSize: '20m',
-  maxFiles: '14d',
+  maxSize: '50m',
+  maxFiles: '5d',
   level: 'error',
   format: winston.format.combine(
     winston.format.timestamp({
