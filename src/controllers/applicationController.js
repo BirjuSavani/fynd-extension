@@ -4,8 +4,7 @@ const translate = require('translate-google-api');
 const { OpenAI } = require('openai');
 
 const openai = new OpenAI({
-  apiKey:
-    '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',
+  apiKey:process.env.OPENAI_API_KEY,
 });
 
 // Helper function to extract filters from query
