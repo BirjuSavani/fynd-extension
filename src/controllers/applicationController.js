@@ -4,11 +4,11 @@ const translate = require('translate-google-api');
 const { OpenAI } = require('openai');
 
 const openai = new OpenAI({
-  apiKey:process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 // Helper function to extract filters from query
-async function extractFiltersFromQuery(query, brands, categories, colors, language = 'en') {
+async function extractFiltersFromQuery(query, brands, categories, colors) {
   if (!query) return {};
 
   let translatedQuery = query;
@@ -30,7 +30,8 @@ async function extractFiltersFromQuery(query, brands, categories, colors, langua
     });
 
     translatedQuery = completion.choices[0].message.content;
-    logger.debug(`OpenAI translated query: "${query}" -> "${translatedQuery}"`);
+    console.log('OpenAI translated query:', translatedQuery);
+    logger.info(`OpenAI translated query: "${query}" -> "${translatedQuery}"`);
   } catch (err) {
     logger.warn('OpenAI translation failed, using original query', { error: err.message });
   }
@@ -150,7 +151,7 @@ exports.getApplicationProducts = async (req, res, next) => {
 
     const { platformClient } = req;
     const { application_id } = req.params;
-    const { company_id, query, language = 'en' } = req.query; // Add language param
+    const { company_id, query } = req.query; // Add language param
 
     if (!company_id) {
       logger.warn('Missing company_id in request', { requestId });
@@ -202,8 +203,7 @@ exports.getApplicationProducts = async (req, res, next) => {
       query,
       allBrands,
       allCategories,
-      allColors,
-      language
+      allColors
     );
     logger.debug('Extracted filters from query', { requestId, filters, query });
 
