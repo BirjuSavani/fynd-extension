@@ -252,24 +252,21 @@ exports.getApplicationProducts = async (req, res, next) => {
       });
     }
 
-    // Pagination
-    const startIndex = (page - 1) * limit;
-    const paginatedProducts = filteredProducts.slice(startIndex, startIndex + parseInt(limit));
+    // // Pagination
+    // const startIndex = (page - 1) * limit;
+    // const paginatedProducts = filteredProducts.slice(startIndex, startIndex + parseInt(limit));
 
-    logger.info(`Returning ${paginatedProducts.length} products for page ${page}`, {
-      requestId,
-      pageNumber: page,
-      pageLimit: limit,
-      resultsCount: paginatedProducts.length,
-    });
+    // logger.info(`Returning ${paginatedProducts.length} products for page ${page}`, {
+    //   requestId,
+    //   pageNumber: page,
+    //   pageLimit: limit,
+    //   resultsCount: paginatedProducts.length,
+    // });
 
     return res.json({
       products: {
-        items: paginatedProducts,
+        items: filteredProducts,
         total: filteredProducts.length,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        has_next: startIndex + limit < filteredProducts.length,
       },
     });
   } catch (err) {
